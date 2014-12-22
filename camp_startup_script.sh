@@ -2,12 +2,13 @@
 #Add startup script for CAMP-PROD servers.
 #Created by Kent Li, 12/22/2014
 
-test [ -e /etc/profile.d/java.sh ] \
+test  -e /etc/profile.d/java.sh  \
 	|| cat <<< 'export JAVA_HOME=/usr/java/jdk1.7.0_60
 PATH=$JAVA_HOME/bin:$PATH
 CLASSPATH=.:$JAVA_HOME/lib/tools.jar
 export JAVA_HOME CLASSPATH PATH ' > /etc/profile.d/java.sh
 
+detect_activemq(){
 ( if cd /usr/local/*activemq* 
 	then
 		echo "Apache activemq detected...generating startup script..."
@@ -45,7 +46,9 @@ exit 0  " > /etc/init.d/activemq
 	chkconfig activemq --add
 	
 fi )
+}
 
+detect_liferay(){
 if [ -d /usr/local/liferay ]
 	then 
 		echo "liferay detected...generating startup script..."
@@ -76,7 +79,10 @@ esac
 exit 0 ' > /etc/init.d/liferay
 		chmod +x /etc/init.d/liferay
 		chkconfig liferay --add
+fi
+}
 
+detect_jboss(){
 if [ -d /usr/local/jboss ]
 	then 
 		echo "jboss detected...generating startup script..."
@@ -143,7 +149,9 @@ exit 0 ' > /etc/init.d/jboss
 		chmod +x /etc/init.d/jboss
 		chkconfig jboss --add
 fi
+}
 
+detect_tomcat(){
 if [ -d /usr/local/tomcat ]
 	then 
 		echo "tomcat detected...generating startup script..."
@@ -175,3 +183,7 @@ exit 0 ' > /etc/init.d/tomcat
 		chmod +x /etc/init.d/tomcat
 		chkconfig tomcat --add
 fi
+}
+
+	
+	
