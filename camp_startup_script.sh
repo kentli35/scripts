@@ -185,5 +185,18 @@ exit 0 ' > /etc/init.d/tomcat
 fi
 }
 
-	
-	
+if [ $# -eq 0 ]
+	then 
+		echo "Detecting all services..."
+		detect_activemq 
+		detect_liferay
+		detect_jboss
+		detect_tomcat
+	else 
+		echo "Detecting specific services..."
+		while [ $1 ]
+		do
+			detect_$1
+			shift
+		done
+fi
