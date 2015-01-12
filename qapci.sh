@@ -1,21 +1,24 @@
 #!/bin/bash
-#TEST
+#This script is used for deploying PerfectComp components such as ui-manager-service
+#,avh-manager-widgets and vritualhost-service.It can be run seperately with any other
+#CI tools.
+#Ver. 0.90
+#Created by Kent Li, 1/13/2015
 USER=SVNDeployment
 PASSWORD=ILoveECWise2013!
 NEXUS_IP=192.168.1.199
-
-detect_latest(){
-	if [ -f build.properties.snapshot ]
-		then	
-			rm -f build.properties.snapshot
-	fi
-	wget --http-user=$NEXUS_UESRNAME --http-passwd=$NEXUS_PASSWORD --no-check-certificate \
-	"https://svn.ecwise.com/build.properties.snapshot.php?u=$NEXUS_USERNAME&p=$NEXUS_PASSWORD" \
-	-O ./build.properties.snapshot
-	sed -i 's/<br\/>/\n/g' build.properties.snapshot
-	latest_version=$(grep $1 build.properties.snapshot |awk 'BEGIN {FS="="}{print $2}')
-	echo "The lastest snapshot version for $1 is $package_version".
-}
+#detect_latest(){
+#	if [ -f build.properties.snapshot ]
+#		then	
+#			rm -f build.properties.snapshot
+#	fi
+#	wget --http-user=$NEXUS_UESRNAME --http-passwd=$NEXUS_PASSWORD --no-check-certificate \
+#	"https://svn.ecwise.com/build.properties.snapshot.php?u=$NEXUS_USERNAME&p=$NEXUS_PASSWORD" \
+#	-O ./build.properties.snapshot
+#	sed -i 's/<br\/>/\n/g' build.properties.snapshot
+#	latest_version=$(grep $1 build.properties.snapshot |awk 'BEGIN {FS="="}{print $2}')
+#	echo "The lastest snapshot version for $1 is $package_version".
+#}
 
 update_hosts(){
 	if ! grep -q "nexus.ecwise.com" /etc/hosts
@@ -25,74 +28,19 @@ update_hosts(){
 	fi
 }
 
-#components can be: uimanager,virtualhost,avhmanager
-build_components(){
-	release_home=/release_home/$1
-	install_path=/usr/local/perfectcomp/$1
-	if [ -d $release_home ]
-		then 
-			rm -rf $release_home
-	fi
-	
-	mkdir -p $release_home/config && cd $release_home
-	
-	echo "(1/5)Getting package from nexus..."
-	wget --quiet --http-user=$NEXUS_USERNAME --http-password=$NEXUS_PASSWORD \
-	--no-check-certificate \
-	"https://nexus.ecwise.com/service/local/artifact/maven/redirect?\
-	r=snapshots&g=com.c2r.perfectcomp&a=$software&v=$package_version&e=jar" \
-	--output-document=$software.jar
-	
-	if [ ! -s $software.jar ]
-		then 
-			echo "$software.jar is not a valid file, downlaod failed."
-			exit 1
-	fi
-	
-	echo "(2/5)Getting application.properties from svn..."
-	wget  --quiet --http-user=$NEXUS_UESRNAME --http-passwd=$NEXUS_PASSWORD \
-	--no-check-certificate \
-	https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/QA/$1\
-	/application.properties -O $release_home/config/application.properties
-
-	echo "(3/5)Clearing old version components..."
-	service $software stop
-	if [ -d $install_path ] 
-		then 
-			rm -rf $install_path
-	fi
-	mkdir -p $install_path
-
-	echo "(4/5)Copying files to install path..."
-		cp -rp * $install_path
-
-	echo "(5/5)Getting startup script form svn..."
-	if [ -f /etc/init.d/$software ] 	
-		then
-			rm $servicefile
-	fi
-	wget  --quiet --http-user=$NEXUS_UESRNAME --http-passwd=$NEXUS_PASSWORD \
-	--no-check-certificate \
-	https://svn.ecwise.com/svn/perfectComp/utility-scripts/service-control/trunk/pc-uimanager \
-	-O /etc/init.d/$software
-	chmod 755 /etc/init.d/$software
-	service $software start
-
-	echo "$software is successfully deployed with version $package_version!"
-}
-
 build_uimanager(){
 	comp=uimanager
 	release_home=/release_home/$comp
 	install_path=/usr/local/perfectcomp/$comp
 	package_version=$1	
+	echo $LINESEP
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
-			echo "You are deploying a SNAPSHOT version of Virtualhost..."
+			echo "You are deploying a SNAPSHOT version of ui-manager-service..."
 		else
 			snapshot_or_release='releases'
-			echo "You are deploying a RELEASE version of Virtualhost..." 
+			echo "You are deploying a RELEASE version of ui-manager-service..." 
 	fi
 
 	if [ -d $release_home ]
@@ -116,11 +64,11 @@ build_uimanager(){
 		
 		if [ ! -s $comp.jar ]
 			then 
-				echo "[FAILED]"
+				echo "			[FAILED]"
 				echo "$comp.jar is not a valid file, will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "			[OK]"
 				break
 		fi
 
@@ -143,12 +91,12 @@ build_uimanager(){
 
 		if [ ! -s $release_home/config/application.properties ]
 			then 
-				echo "[FAILED]"
+				echo "		[FAILED]"
 				echo "application.properties is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "		[OK]"
 				break
 		fi
 
@@ -166,10 +114,10 @@ build_uimanager(){
 		then 
 			rm -rf $install_path
 	fi
-	mkdir -p $install_path && echo "[OK]"
+	mkdir -p $install_path && echo "			[OK]"
 
 	echo -n "(4/5)Copying files to install path..."
-		cp -rp * $install_path && echo "[OK]"
+		cp -rp * $install_path && echo "			[OK]"
 
 	#Download startup script from svn, the same loop as above.
 	err_count=0
@@ -187,12 +135,12 @@ build_uimanager(){
 
 		if [ ! -s /etc/init.d/pc-$comp ]
 			then 
-				echo "[FAILED]"
+				echo "			[FAILED]"
 				echo "pc-$comp is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "			[OK]"
 				break
 		fi
 
@@ -205,7 +153,7 @@ build_uimanager(){
 
 	chmod 755 /etc/init.d/pc-$comp
 	service pc-$comp start
-	echo "UI Manager service is successfully deployed with version: $package_version!"
+	echo "ui-manager-service is successfully deployed with version: $package_version!"
 }
 
 build_virtualhost(){
@@ -213,13 +161,14 @@ build_virtualhost(){
 	release_home=/release_home/$comp
 	install_path=/usr/local/perfectcomp/$comp
 	package_version=$1	
+	echo $LINESEP
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
-			echo "You are deploying a SNAPSHOT version of UI Manager..."
+			echo "You are deploying a SNAPSHOT version of virtualhost-service..."
 		else
 			snapshot_or_release='releases'
-			echo "You are deploying a RELEASE version of UI Manager..." 
+			echo "You are deploying a RELEASE version of virtualhost-service..." 
 	fi
 
 	if [ -d $release_home ]
@@ -235,7 +184,7 @@ build_virtualhost(){
 	err_count=0
 	while true
 	do
-		echo -n "Getting package from nexus..."
+		echo -n "(1/5)Getting package from nexus..."
 		wget --quiet --http-user=$USER --http-password=$PASSWORD \
 		--no-check-certificate \
 		"https://nexus.ecwise.com/service/local/artifact/maven/redirect?r=${snapshot_or_release}&g=com.c2r.perfectcomp&a=virtualhost-service&v=$package_version&e=jar" \
@@ -243,11 +192,11 @@ build_virtualhost(){
 		
 		if [ ! -s $comp.jar ]
 			then 
-				echo "[FAILED]"
+				echo "			[FAILED]"
 				echo "$comp.jar is not a valid file, will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "			[OK]"
 				break
 		fi
 
@@ -262,7 +211,7 @@ build_virtualhost(){
 	err_count=0
 	while true
 	do
-		echo -n "Getting application.properties from svn..."
+		echo -n "(2/5)Getting application.properties from svn..."
 		wget  --quiet --http-user=$USER --http-passwd=$PASSWORD \
 		--no-check-certificate \
 	https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/virtualhost-service/application.properties \
@@ -270,12 +219,12 @@ build_virtualhost(){
 
 		if [ ! -s $release_home/config/application.properties ]
 			then 
-				echo "[FAILED]"
+				echo "		[FAILED]"
 				echo "application.properties is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "		[OK]"
 				break
 		fi
 
@@ -287,22 +236,22 @@ build_virtualhost(){
 	done
 	
 
-	echo -n "Clearing old version components..."
+	echo -n "(3/5)Clearing old version components..."
 	service pc-$comp stop > /dev/null
 	if [ -d $install_path ] 
 		then 
 			rm -rf $install_path
 	fi
-	mkdir -p $install_path && echo "[OK]"
+	mkdir -p $install_path && echo "			[OK]"
 
-	echo -n "Copying files to install path..."
-		cp -rp * $install_path && echo "[OK]"
+	echo -n "(4/5)Copying files to install path..."
+		cp -rp * $install_path && echo "			[OK]"
 
 	#Download startup script from svn, the same loop as above.
 	err_count=0
 	while true
 	do 
-		echo -n "Getting startup script form svn..."
+		echo -n "(5/5)Getting startup script form svn..."
 		if [ -f /etc/init.d/pc-$comp ] 	
 			then
 				rm /etc/init.d/pc-$comp
@@ -314,12 +263,12 @@ build_virtualhost(){
 
 		if [ ! -s /etc/init.d/pc-$comp ]
 			then 
-				echo "[FAILED]"
+				echo "			[FAILED]"
 				echo "pc-$comp is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "			[OK]"
 				break
 		fi
 
@@ -332,7 +281,7 @@ build_virtualhost(){
 
 	chmod 755 /etc/init.d/pc-$comp
 	service pc-$comp start
-	echo "Virtualhost service is successfully deployed with version: $package_version!"
+	echo "virtualhost-service is successfully deployed with version: $package_version!"
 }
 
 build_avhmanager(){
@@ -340,6 +289,7 @@ build_avhmanager(){
 	release_home=/release_home/$comp
 	install_path=/usr/local/perfectcomp/$comp
 	package_version=$1	
+	echo $LINESEP
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
@@ -370,11 +320,11 @@ build_avhmanager(){
 		
 		if [ ! -s $comp.zip ]
 			then 
-				echo "[FAILED]"
+				echo "			[FAILED]"
 				echo "$comp.zip is not a valid file, will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "			[OK]"
 				break
 		fi
 
@@ -404,12 +354,12 @@ build_avhmanager(){
 
 		if [ ! -s $release_home/config/avhmanager.properties ]
 			then 
-				echo "[FAILED]"
+				echo "		[FAILED]"
 				echo "avhmanager.properties is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
-				echo "[OK]"
+				echo "		[OK]"
 				break
 		fi
 
@@ -435,65 +385,21 @@ build_avhmanager(){
    		    escapedval=$(echo $val | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')
    		    sed -i -e 's/${'"${key}"'}/'"${escapedval}"'/g' $file
    		done < $release_home/config/avhmanager.properties
-	done && echo "[OK]"
+	done && echo "	[OK]"
 
 	echo -n "(4/5)Clearing old version components..."
 	if [ -d $install_path ] 
 		then 
 			rm -rf $install_path
 	fi
-	mkdir -p $install_path && echo "[OK]"
+	mkdir -p $install_path && echo "			[OK]"
 
 	echo -n "(5/5)Copying files to install path..."
-		cp -rp ./avhmanager/* $install_path && echo "[OK]"
+		cp -rp ./avhmanager/* $install_path && echo "			[OK]"
 
 	echo "Virtualhost service is successfully deployed with version: $package_version!"
 }
 	
-
-
-
-
-LINESEP="==================================================================================="
-clear
-echo $LINESEP
-echo ""
-echo "Hello, we are about to deploy the PerfectComp components from SVN."
-read -p "Press Enter to continue[ENTER]" var
-echo $LINESEP
-echo ""
-read -p "Do you want to update avh-manager-widgets? [Y/n]" answer
-
-case $answer in 
-	[^Nn]|"")
-		echo "Please specify the version you want to deploy. You can enter the precise release"
-		echo "number, such as 1.4.5 or snapshot version like 1.4.5-SNAPSHOT, or just enter\"LATEST\""
-		echo "to get the latest SNAPSHOT version."
-		while true 
-		do
-			read -p "Please enter the version you want: " avh_version
-			[ -z $avh_version ] && echo -n "Version can not be null. " && continue 
-			echo "Start deploying avh-manager-widgets with version $avh_version, enter Y to proceed,"
-			read -p "N to give up, R to modify the version: [Y/n/r]" choice
-			case $choice in 
-				[Yy])
-					echo $LINESEP
-					build_avhmanager $avh_version 
-					break;;
-				[Nn])
-					echo "Skipping to the next step..."
-					break;;
-				[Rr])
-					;;
-				*)
-					echo $LINESEP
-					build_avhmanager $avh_version 
-					break;;
-			esac
-		done;;
-	[Nn])
-		echo "Skipping to the next step..."
-esac
 
 declare -A fullname=(["avhmanager"]="avh-manager-widgets" \
 ["virtualhost"]="virtualhost-service" ["uimanager"]="ui-manager-service")
@@ -504,7 +410,7 @@ menu(){
 	case $answer in 
 		[^Nn]|"")
 			echo "Please specify the version you want to deploy. You can enter the precise release"
-			echo "number, such as 1.4.5 or snapshot version like 1.4.5-SNAPSHOT, or just enter\"LATEST\""
+			echo "number, such as 1.4.5 or snapshot version like 1.4.5-SNAPSHOT, or just enter \"LATEST\""
 			echo "to get the latest SNAPSHOT version."
 			while true 
 			do
@@ -532,28 +438,35 @@ menu(){
 			echo "Skipping to the next step..."
 	esac
 }
-	
-menu avhmanager	
-menu virtualhost
-menu uimanager
 
 
 
+LINESEP="==================================================================================="
+clear
+echo $LINESEP
+echo ""
+echo "Hello, we are about to deploy the PerfectComp components from SVN."
+read -p "Press Enter to continue[ENTER]" var
+echo $LINESEP
+echo ""
+echo "We provide three options for you to proceed the deployment:"
+echo "1.Deploy components step by step[DEFAULT]"
+echo "2.Deploy all three components from latest snapshot"
+echo "3.Rollback previous version you deployed(Currently not functional)"
+read -p "Your decision[1/2/3]: " decision
 
-
-
-#build_uimanager LATEST
-#build_virtualhost LATEST
-
-
-
-
-#build_uimanager LATEST
-#build_virtualhost LATEST
-	
-
-
-
-
-#build_uimanager LATEST
-#build_virtualhost LATEST
+case $decision in 
+	[^23]|"")
+		menu avhmanager
+		menu virtualhost
+		menu uimanager
+		;;
+	2)
+		build_avhmanager LATEST
+		build_virtualhost LATEST
+		build_uimanager LATEST
+		;;
+	3)
+		echo "Currently this option is not functional."
+		;;
+esac
