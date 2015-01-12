@@ -335,5 +335,48 @@ build_virtualhost(){
 	echo "Virtualhost service is successfully deployed with version: $package_version!"
 }
 
-build_uimanager LATEST
-build_virtualhost LATEST
+LINESEP="==================================================================================="
+clear
+echo $LINESEP
+echo ""
+echo "Hello, we are about to deploy the PerfectComp components from SVN."
+read -p "Press Enter to continue[ENTER]" var
+echo $LINESEP
+echo ""
+read -p "Do you want to update avh-manager-widgets? [Y/n]" answer
+
+case $answer in 
+	[Yy])
+		echo "Please specify the version you want to deploy. You can enter the precise release"
+		echo "number, such as 1.4.5 or snapshot version like 1.4.5-SNAPSHOT, or just enter\"LATEST\""
+		echo "to get the latest SNAPSHOT version."
+		while true 
+		do
+			read -p "Please enter the version you want: " avh_version
+			echo "Start deploying avh-manager-widgets with version $avh_version, enter Y to proceed,"
+			read -p "N to give up, R to modify the version: [Y/n/r]" choice
+			case $choice in 
+				[Yy])
+					build_avhmanager $avh_version 
+					break;;
+				[Nn])
+					break;;
+				[Rr])
+					;;
+				*)
+					build_avhmanager $avh_version 
+					break;;
+			esac
+		done;;
+	[Nn])
+		echo "Skipping to the next step."
+esac
+
+
+
+
+
+
+
+#build_uimanager LATEST
+#build_virtualhost LATEST
