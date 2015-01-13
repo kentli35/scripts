@@ -14,10 +14,13 @@ expect <<- DONE
 	send "1\r"
 	expect "*default*"
 	send "$START\r"
+	expect "*default*"
 	send "\r"
 	expect "*m for help):"
 	send "a\r"
+	expect "*(1-4):"
 	send "1\r"
+	expect "*m for help):"
 	send "w\r"
 DONE
 
