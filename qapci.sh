@@ -70,7 +70,7 @@ build_uimanager(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -98,7 +98,7 @@ build_uimanager(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -142,7 +142,7 @@ build_uimanager(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -150,8 +150,9 @@ build_uimanager(){
 	done
 
 	chmod 755 /etc/init.d/pc-$comp
-	service pc-$comp start
-	echo "ui-manager-service is successfully deployed with version: $package_version!"
+	chkconfig pc-$comp on
+	service pc-$comp start > /dev/null
+	echo "ui-manager-service is successfully deployed with version: $package_version"
 }
 
 build_virtualhost(){
@@ -198,7 +199,7 @@ build_virtualhost(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -226,7 +227,7 @@ build_virtualhost(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -270,7 +271,7 @@ build_virtualhost(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -278,8 +279,9 @@ build_virtualhost(){
 	done
 
 	chmod 755 /etc/init.d/pc-$comp
-	service pc-$comp start
-	echo "virtualhost-service is successfully deployed with version: $package_version!"
+	chkconfig pc-$comp on
+	service pc-$comp start > /dev/null
+	echo "virtualhost-service is successfully deployed with version: $package_version"
 }
 
 build_avhmanager(){
@@ -326,7 +328,7 @@ build_avhmanager(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -361,7 +363,7 @@ build_avhmanager(){
 				break
 		fi
 
-		if [[ $err_count -gt 3 ]]
+		if [[ $err_count -gt 2 ]]
 			then 
 				echo "Maximum error count exceeded, please try later."
 				exit 1
@@ -395,7 +397,7 @@ build_avhmanager(){
 	echo -n "(5/5)Copying files to install path..."
 		cp -rp ./avhmanager/* $install_path && echo "			[OK]"
 
-	echo "avh-manager-widgets is successfully deployed with version: $package_version!"
+	echo "avh-manager-widgets is successfully deployed with version: $package_version"
 }
 	
 
@@ -495,5 +497,10 @@ case $decision in
 		;;
 	3)
 		echo "Currently this option is not functional."
+		exit 1
 		;;
 esac
+
+echo $LINESEP
+echo "We've finished deploying the PerfectComp components, cheers!"
+exit 0
