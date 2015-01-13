@@ -22,6 +22,7 @@ expect <<- DONE
 	send "1\r"
 	expect "*m for help):"
 	send "w\r"
+	expect eof
 DONE
 
 reboot
