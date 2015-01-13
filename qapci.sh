@@ -2,11 +2,10 @@
 #This script is used for deploying PerfectComp components such as ui-manager-service
 #,avh-manager-widgets and vritualhost-service.It can be run seperately with any other
 #CI tools.
-#Ver. 0.90
+#Ver. 0.95
 #Created by Kent Li, 1/13/2015
-USER=SVNDeployment
-PASSWORD=ILoveECWise2013!
 NEXUS_IP=192.168.1.199
+URL="https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/avh-manager-widgets/avhmanager.properties"
 #detect_latest(){
 #	if [ -f build.properties.snapshot ]
 #		then	
@@ -23,7 +22,6 @@ NEXUS_IP=192.168.1.199
 update_hosts(){
 	if ! grep -q "nexus.ecwise.com" /etc/hosts
 		then
-			echo "Updating hosts file with nexus ip"
 			echo "$NEXUS_IP nexus.ecwise.com" >> /etc/hosts
 	fi
 }
@@ -37,10 +35,10 @@ build_uimanager(){
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
-			echo "You are deploying a SNAPSHOT version of ui-manager-service..."
+			echo "Now we are deploying a SNAPSHOT version of ui-manager-service..."
 		else
 			snapshot_or_release='releases'
-			echo "You are deploying a RELEASE version of ui-manager-service..." 
+			echo "Now we are deploying a RELEASE version of ui-manager-service..." 
 	fi
 
 	if [ -d $release_home ]
@@ -109,7 +107,7 @@ build_uimanager(){
 	
 
 	echo -n "(3/5)Clearing old version components..."
-	service pc-$comp stop > /dev/null
+	service pc-$comp stop > /dev/null 2>&1
 	if [ -d $install_path ] 
 		then 
 			rm -rf $install_path
@@ -165,10 +163,10 @@ build_virtualhost(){
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
-			echo "You are deploying a SNAPSHOT version of virtualhost-service..."
+			echo "Now we are deploying a SNAPSHOT version of virtualhost-service..."
 		else
 			snapshot_or_release='releases'
-			echo "You are deploying a RELEASE version of virtualhost-service..." 
+			echo "Now we are deploying a RELEASE version of virtualhost-service..." 
 	fi
 
 	if [ -d $release_home ]
@@ -293,10 +291,10 @@ build_avhmanager(){
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
 		then 
 			snapshot_or_release='snapshots'
-			echo "You are deploying a SNAPSHOT version of avh-manager-widgets..."
+			echo "Now we are deploying a SNAPSHOT version of avh-manager-widgets..."
 		else
 			snapshot_or_release='releases'
-			echo "You are deploying a RELEASE version of avh-manager-widgets..." 
+			echo "Now we are deploying a RELEASE version of avh-manager-widgets..." 
 	fi
 
 	if [ -d $release_home ]
@@ -397,7 +395,7 @@ build_avhmanager(){
 	echo -n "(5/5)Copying files to install path..."
 		cp -rp ./avhmanager/* $install_path && echo "			[OK]"
 
-	echo "Virtualhost service is successfully deployed with version: $package_version!"
+	echo "avh-manager-widgets is successfully deployed with version: $package_version!"
 }
 	
 
@@ -440,8 +438,9 @@ menu(){
 }
 
 
-
+#Here the script starts
 LINESEP="==================================================================================="
+URL="https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/avh-manager-widgets/avhmanager.properties"
 clear
 echo $LINESEP
 echo ""
@@ -449,19 +448,47 @@ echo "Hello, we are about to deploy the PerfectComp components from SVN."
 read -p "Press Enter to continue[ENTER]" var
 echo $LINESEP
 echo ""
+err_try=0
+#Validate the account with curl via SVN
+while true
+do
+	read -p "To execute this script, please enter your domain username: " USER
+	read -s -p "Please enter your domain password: " PASSWORD
+	echo ""
+	echo "Validating your authentication, please wait..."
+	STATUS_CODE=`curl -u $USER:$PASSWORD -o /dev/null -s -w %{http_code} $URL`
+	if [[ $STATUS_CODE == "200" ]]
+		then 
+			echo "Your authentication is valid, preparing..."
+			break
+		else
+			echo "Your authentication is not valid, please try again."
+			((err_try++))
+	fi
+	if [ $err_try -gt 2 ]
+		then 	
+			echo "Maximum error count exceeded, please try later."
+			exit 1
+	fi
+done
+
+echo $LINESEP
+echo ""
 echo "We provide three options for you to proceed the deployment:"
 echo "1.Deploy components step by step[DEFAULT]"
 echo "2.Deploy all three components from latest snapshot"
 echo "3.Rollback previous version you deployed(Currently not functional)"
-read -p "Your decision[1/2/3]: " decision
+read -p "Enter your choice, or just press enter to select the default option[1/2/3]: " decision
 
 case $decision in 
 	[^23]|"")
+		update_hosts
 		menu avhmanager
 		menu virtualhost
 		menu uimanager
 		;;
 	2)
+		update_hosts
 		build_avhmanager LATEST
 		build_virtualhost LATEST
 		build_uimanager LATEST
