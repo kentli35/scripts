@@ -554,8 +554,8 @@ build_avhmanager(){
 }
 	
 
-declare -A fullname=(["avhmanager"]="avh-manager-widgets" \
-["virtualhost"]="virtualhost-service" ["uimanager"]="ui-manager-service")
+declare -A fullname=(["avhmanager"]="avh-manager-widgets" ["virtualhost"]="virtualhost-service" \
+["uimanager"]="ui-manager-service" ["virtualhost-job"="virtualhost-job")
 
 menu(){
 	read -p "Do you want to deploy ${fullname["$1"]}? [Y/n]" answer
@@ -575,7 +575,12 @@ menu(){
 				case $choice in 
 					[Yy])
 						echo $LINESEP
-						build_components $1 $version 
+						if [[ $1 == "avhmanager" ]]
+							then 
+								build_avhmanager $version
+							else
+								build_components $1 $version 
+						fi
 						break;;
 					[Nn])
 						echo "Skipping to the next step..."
@@ -584,7 +589,12 @@ menu(){
 						;;
 					*)
 						echo $LINESEP
-						build_components $1 $version 
+						if [[ $1 == "avhmanager" ]]
+							then 
+								build_avhmanager $version
+							else
+								build_components $1 $version 
+						fi
 						break;;
 				esac
 			done;;
