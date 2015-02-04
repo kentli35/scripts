@@ -554,7 +554,10 @@ build_avhmanager(){
 }
 	
 
-declare -A fullname=(["avhmanager"]="avh-manager-widgets" ["virtualhost"]="virtualhost-service" \ ["uimanager"]="ui-manager-service" ["virtualhost-job"="virtualhost-job")
+declare -A fullname=(["avhmanager"]="avh-manager-widgets" \
+["virtualhost"]="virtualhost-service" \ 
+["uimanager"]="ui-manager-service" \
+["virtualhost-job"="virtualhost-job")
 
 menu(){
 	read -p "Do you want to deploy ${fullname["$1"]}? [Y/n]" answer
