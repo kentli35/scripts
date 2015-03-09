@@ -2,7 +2,7 @@
 #This script is used for deploying PerfectComp components such as ui-manager-service
 #,avh-manager-widgets and vritualhost-service.It can be run seperately with any other
 #CI tools.
-#Ver. 0.95
+#Ver. 0.97
 #Created by Kent Li, 1/13/2015
 NEXUS_IP=192.168.1.199
 #detect_latest(){
@@ -36,20 +36,31 @@ backup_current(){
 	
 }
 
-rollback(){
-	if [ -d $install_path ]
-		then 	
-			rm -rf $install_path
+rollback_pre(){
+	if [ -d /usr/local/perfectcomp/$1 ]
+		then	
+			rm -rf /usr/local/perfectcomp/$1 
 	fi
-	cd ${install_path%/*}
+	tar xf $1.previous.tar.gz -C /usr/local/perfectcomp/
+
+
+rollback(){
+	if [ -f $1.previous.tar.gz && -s $1.previous.tar.gz ]
+		then 
+			read -p "Previous deployment of $1 found...Ready to rollback?[y/N]: " answer
+			case $answer in 
+				[Yy])
+					
+				
+				
+			
 	tar xf $1.previous.tar.gz 
 	
 }
 
 build_components(){
-	comp=$1
-	release_home=/release_home/$comp
-	install_path=/usr/local/perfectcomp/$comp
+	release_home=/release_home/$1
+	install_path=/usr/local/perfectcomp/$1
 	package_version=$2
 	echo $LINESEP
 	if [[ "$package_version" =~ "SNAP" || "$package_version" =~ "LATEST" ]] 
@@ -77,13 +88,13 @@ build_components(){
 		echo -n "(1/5)Getting package from nexus..."
 		wget --quiet --http-user=$USER --http-password=$PASSWORD \
 		--no-check-certificate \
-		"https://nexus.ecwise.com/service/local/artifact/maven/redirect?r=${snapshot_or_release}&g=com.c2r.perfectcomp&a=ui-manager-service&v=$package_version&e=jar" \
-		--output-document=$comp.jar
+		"https://nexus.ecwise.com/service/local/artifact/maven/redirect?r=${snapshot_or_release}&g=com.c2r.perfectcomp&a=${fullname["$1"]}&v=$package_version&e=jar" \
+		--output-document=$1.jar
 		
-		if [ ! -s $comp.jar ]
+		if [ ! -s $1.jar ]
 			then 
 				echo "			[FAILED]"
-				echo "$comp.jar is not a valid file, will try downloading again."
+				echo "$1.jar is not a valid file, will try downloading again."
 				((err_count++))
 			else
 				echo "			[OK]"
@@ -106,7 +117,7 @@ build_components(){
 		do
 			wget  --quiet --http-user=$USER --http-passwd=$PASSWORD \
 			--no-check-certificate \
-		https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/${fullname["$1"]}/$property_file \
+		https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/QA/${fullname["$1"]}/$property_file \
 			-O $release_home/config/$property_file
 	
 			if [ ! -s $release_home/config/$property_file ]
@@ -128,7 +139,7 @@ build_components(){
 		
 
 	echo -n "(3/5)Clearing old version components..."
-	service pc-$comp stop > /dev/null 2>&1
+	service pc-$1 stop > /dev/null 2>&1
 	if [ -d $install_path ] 
 		then 
 			rm -rf $install_path
@@ -143,19 +154,19 @@ build_components(){
 	while true
 	do 
 		echo -n "(5/5)Getting startup script form svn..."
-		if [ -f /etc/init.d/pc-$comp ] 	
+		if [ -f /etc/init.d/pc-$1 ] 	
 			then
-				rm /etc/init.d/pc-$comp
+				rm /etc/init.d/pc-$1
 		fi
 		wget --quiet --http-user=$USER --http-passwd=$PASSWORD \
 		--no-check-certificate \
-		https://svn.ecwise.com/svn/perfectComp/utility-scripts/service-control/trunk/pc-$comp \
-		-O /etc/init.d/pc-$comp
+		https://svn.ecwise.com/svn/perfectComp/utility-scripts/service-control/trunk/pc-$1 \
+		-O /etc/init.d/pc-$1
 
-		if [ ! -s /etc/init.d/pc-$comp ]
+		if [ ! -s /etc/init.d/pc-$1 ]
 			then 
 				echo "			[FAILED]"
-				echo "pc-$comp is not a valid file, \
+				echo "pc-$1 is not a valid file, \
 				will try downloading again."
 				((err_count++))
 			else
@@ -170,9 +181,9 @@ build_components(){
 		fi
 	done
 
-	chmod 755 /etc/init.d/pc-$comp
-	chkconfig pc-$comp on
-	service pc-$comp start > /dev/null
+	chmod 755 /etc/init.d/pc-$1
+	chkconfig pc-$1 on
+	service pc-$1 start > /dev/null
 	echo "${fullname["$1"]} is successfully deployed with version: $package_version"
 }
 
@@ -208,7 +219,7 @@ build_avhmanager(){
 		wget --quiet --http-user=$USER --http-password=$PASSWORD \
 		--no-check-certificate \
 		"https://nexus.ecwise.com/service/local/artifact/maven/redirect?r=${snapshot_or_release}&g=com.c2r.perfectcomp&a=avh-manager-widgets&v=$package_version&e=zip&c=bin" \
-		--output-document=$comp.zip
+		--output-document=$1.zip
 		
 		if [ ! -s $comp.zip ]
 			then 
@@ -241,7 +252,7 @@ build_avhmanager(){
 		echo -n "(2/5)Getting application.properties from svn..."
 		wget  --quiet --http-user=$USER --http-passwd=$PASSWORD \
 		--no-check-certificate \
-	https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/avh-manager-widgets/avhmanager.properties \
+	https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/QA/avh-manager-widgets/avhmanager.properties \
 		-O $release_home/config/avhmanager.properties
 
 		if [ ! -s $release_home/config/avhmanager.properties ]
@@ -266,6 +277,7 @@ build_avhmanager(){
 	dos2unix -q -o $release_home/config/avhmanager.properties
 
 	echo -n "(3/5)Replacing config values in js and css files..."
+	sed -i "s/AVH_MANAGER_VERSION/$package_version/" $release_home/config/avhmanager.properties
 	for file in $(find $release_home/avhmanager -type f -iname "*.js" -o -iname "*.css")
 	do
    		#echo "Processing file: $file"
@@ -347,7 +359,7 @@ menu(){
 
 #Here the script starts
 LINESEP="==================================================================================="
-URL="https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/Staging/avh-manager-widgets/avhmanager.properties"
+URL="https://svn.ecwise.com/svn/perfectComp/perfectcomp-configurations/trunk/QA/avh-manager-widgets/avhmanager.properties"
 clear
 echo $LINESEP
 echo ""
