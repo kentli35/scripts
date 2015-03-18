@@ -42,7 +42,7 @@ rollback_pre(){
 			rm -rf /usr/local/perfectcomp/$1 
 	fi
 	tar xf $1.previous.tar.gz -C /usr/local/perfectcomp/
-
+}
 
 rollback(){
 	if [ -f $1.previous.tar.gz && -s $1.previous.tar.gz ]
@@ -277,7 +277,7 @@ build_avhmanager(){
 	dos2unix -q -o $release_home/config/avhmanager.properties
 
 	echo -n "(3/5)Replacing config values in js and css files..."
-	sed -i "s/AVH_MANAGER_VERSION/$package_version/" $release_home/config/avhmanager.properties
+	sed -i -e "s/RANDOM/$RANDOM/" -e '$ s/$/\n/' $release_home/config/avhmanager.properties
 	for file in $(find $release_home/avhmanager -type f -iname "*.js" -o -iname "*.css")
 	do
    		#echo "Processing file: $file"
