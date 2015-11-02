@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 
+#When our instance throws error message about ssmtp and yaml, run this script.
 if ( -e "/usr/sbin/sendmail" and -e "/usr/sbin/sendmail.postfix"){
     unlink "/usr/sbin/sendmail";
     symlink "/usr/sbin/sendmail.postfix","/usr/sbin/sendmail";

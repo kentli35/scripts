@@ -10,7 +10,7 @@ fi
 
 yum install -y expect -q
 START=`fdisk -u -l /dev/xvda |tail -n 1|awk '{print $3}'`
-echo "Start is $START"
+echo "Starting point is $START"
 
 expect <<- DONE
         spawn fdisk -u /dev/xvda
